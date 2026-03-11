@@ -1,0 +1,107 @@
+from __future__ import annotations
+
+import sqlite3
+from typing import Any
+
+
+class AtivoRepository:
+    def __init__(self, conn: sqlite3.Connection) -> None:
+        self.conn = conn
+
+    def upsert(self, payload: dict[str, Any]) -> None:
+        self.conn.execute(
+            """
+            INSERT INTO ativos (
+                site_id,
+                nome,
+                codigo,
+                emissor,
+                tipo_ativo,
+                categoria,
+                indice,
+                data_pu_atual,
+                pu_atual,
+                valor_nominal_atual,
+                juros_atual,
+                raw_json,
+                created_at,
+                updated_at
+            )
+            VALUES (
+                :site_id,
+                :nome,
+                :codigo,
+                :emissor,
+                :tipo_ativo,
+                :categoria,
+                :indice,
+                :data_pu_atual,
+                :pu_atual,
+                :valor_nominal_atual,
+                :juros_atual,
+                :raw_json,
+                CURRENT_TIMESTAMP,
+                CURRENT_TIMESTAMP
+            )
+            ON CONFLICT(site_id) DO UPDATE SET
+                nome = excluded.nome,
+                codigo = excluded.codigo,
+                emissor = excluded.emissor,
+                tipo_ativo = excluded.tipo_ativo,
+                categoria = excluded.categoria,
+                indice = excluded.indice,
+                data_pu_atual = excluded.data_pu_atual,
+                pu_atual = excluded.pu_atual,
+                valor_nominal_atual = excluded.valor_nominal_atual,
+                juros_atual = excluded.juros_atual,
+                raw_json = excluded.raw_json,
+                updated_at = CURRENT_TIMESTAMP
+            """,
+            payload,
+        )
+
+    def list_all_ids(self) -> list[int]:
+        rows = self.conn.execute(
+            "SELECT site_id FROM ativos ORDER BY site_id"
+        ).fetchall()
+        return [row["site_id"] for row in rows]
+
+
+class PuHistoricoRepository:
+    def __init__(self, conn: sqlite3.Connection) -> None:
+        self.conn = conn
+
+    def insert_many(self, rows: list[dict[str, Any]]) -> int:
+        if not rows:
+            return 0
+
+        before = self.conn.total_changes
+
+        self.conn.executemany(
+            """
+            INSERT OR IGNORE INTO pu_historico (
+                site_id,
+                data_referencia,
+                nome,
+                indice,
+                valor_nominal,
+                juros,
+                pu,
+                raw_json
+            )
+            VALUES (
+                :site_id,
+                :data_referencia,
+                :nome,
+                :indice,
+                :valor_nominal,
+                :juros,
+                :pu,
+                :raw_json
+            )
+            """,
+            rows,
+        )
+
+        after = self.conn.total_changes
+        return after - before
