@@ -44,6 +44,14 @@ class FiduciarioClient:
         # 3) devolve texto puro
         return text
 
+    def get_asset_details(self, emissao: str) -> Any:
+        params = {
+            "action": "buscarPorTitulo",
+            "emissao": emissao,
+        }
+        safe_name = str(emissao).replace("/", "_").replace("\\", "_").replace(" ", "_")
+        return self._get(params, debug_name=f"detalhe_{safe_name}.txt")
+
     def get_daily_pu(self, today: str) -> Any:
         params = {
             "action": "ConsultaPuHistoricoEmIntervaloDeDadas",

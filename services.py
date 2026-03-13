@@ -84,8 +84,22 @@ def _extract_candidate_list(data: Any) -> list[dict[str, Any]]:
 def normalize_to_list(data: Any) -> list[dict[str, Any]]:
     return _extract_candidate_list(data)
 
+def build_detail_lookup(detail_data: Any) -> dict[str, Any]:
+    items = normalize_to_list(detail_data)
+    if items:
+        return items[0]
 
-def build_ativo_row(item: dict[str, Any]) -> dict[str, Any] | None:
+    if isinstance(detail_data, dict):
+        return detail_data
+
+    return {}
+
+def build_ativo_row(
+    item: dict[str, Any],
+    detail_item: dict[str, Any] | None = None,
+) -> dict[str, Any] | None:
+    detail_item = detail_item or {}
+
     site_id = first_existing(
         item,
         "ID_TITULO",
@@ -97,22 +111,127 @@ def build_ativo_row(item: dict[str, Any]) -> dict[str, Any] | None:
         "id",
     )
     if site_id is None:
+        site_id = first_existing(
+            detail_item,
+            "ID_TITULO",
+            "idTitulo",
+            "titulo_id",
+            "IdTitulo",
+            "ID",
+            "Id",
+            "id",
+        )
+    if site_id is None:
         return None
 
-    nome = first_existing(item, "NOME", "Nome", "nome", "titulo", "Titulo", "ativo")
-    codigo = first_existing(
+    nome = first_existing(
+        detail_item,
+        "NOME",
+        "Nome",
+        "nome",
+        "titulo",
+        "Titulo",
+        "ativo",
+        "NomeTitulo",
+    ) or first_existing(
         item,
-        "CODCETIP",
-        "CODBOVESPA",
-        "codigo",
-        "Codigo",
-        "sigla",
-        "ticker",
+        "NOME",
+        "Nome",
+        "nome",
+        "titulo",
+        "Titulo",
+        "ativo",
+        "NomeTitulo",
     )
-    emissor = first_existing(item, "EMISSOR", "Emissor", "emissor")
-    tipo_ativo = first_existing(item, "TIPO_ATIVO", "TIPO", "tipo", "tipoAtivo")
-    categoria = first_existing(item, "CLASSIFICACAO", "categoria", "Categoria")
-    indice = first_existing(item, "INDEXADOR", "INDICE", "indice", "Indice")
+
+    cod_cetip = first_existing(detail_item, "CODCETIP", "codcetip", "CodCetip") or first_existing(
+        item, "CODCETIP", "codcetip", "CodCetip"
+    )
+    cod_bovespa = first_existing(detail_item, "CODBOVESPA", "codbovespa", "CodBovespa") or first_existing(
+        item, "CODBOVESPA", "codbovespa", "CodBovespa"
+    )
+
+    codigo = cod_cetip or cod_bovespa or first_existing(
+        detail_item, "codigo", "Codigo", "sigla", "ticker"
+    ) or first_existing(
+        item, "codigo", "Codigo", "sigla", "ticker"
+    )
+
+    emissor = first_existing(
+        detail_item, "EMISSOR", "Emissor", "emissor"
+    ) or first_existing(
+        item, "EMISSOR", "Emissor", "emissor"
+    )
+
+    tipo_ativo = first_existing(
+        detail_item, "TIPO_ATIVO", "TIPO", "tipo", "tipoAtivo", "TipoAtivo"
+    ) or first_existing(
+        item, "TIPO_ATIVO", "TIPO", "tipo", "tipoAtivo", "TipoAtivo"
+    )
+
+    categoria = first_existing(
+        detail_item, "CATEGORIA", "categoria", "Categoria", "CLASSIFICACAO"
+    ) or first_existing(
+        item, "CATEGORIA", "categoria", "Categoria", "CLASSIFICACAO"
+    )
+
+    classificacao = first_existing(
+        detail_item, "CLASSIFICACAO", "classificacao", "Classificacao"
+    ) or first_existing(
+        item, "CLASSIFICACAO", "classificacao", "Classificacao"
+    )
+
+    indice = first_existing(
+        detail_item, "INDEXADOR", "INDICE", "indice", "Indice"
+    ) or first_existing(
+        item, "INDEXADOR", "INDICE", "indice", "Indice"
+    )
+
+    data_emissao = parse_date(
+        first_existing(
+            detail_item,
+            "DATA_EMISSAO",
+            "EMISSAO",
+            "data_emissao",
+            "dataEmissao",
+            "DataEmissao",
+        )
+    )
+
+    data_vencimento = parse_date(
+        first_existing(
+            detail_item,
+            "DATA_VENCIMENTO",
+            "VENCIMENTO",
+            "data_vencimento",
+            "dataVencimento",
+            "DataVencimento",
+        )
+    )
+
+    pagamento = first_existing(
+        detail_item,
+        "PAGAMENTO",
+        "pagamento",
+        "Pagamento",
+    ) or first_existing(
+        item,
+        "PAGAMENTO",
+        "pagamento",
+        "Pagamento",
+    )
+
+    status_pu = first_existing(
+        detail_item,
+        "STATUS_PU",
+        "status_pu",
+        "StatusPU",
+    ) or first_existing(
+        item,
+        "STATUS_PU",
+        "status_pu",
+        "StatusPU",
+    )
 
     data_pu_atual = parse_date(
         first_existing(item, "DATA", "data", "Data", "dataBase", "dataReferencia")
@@ -151,11 +270,19 @@ def build_ativo_row(item: dict[str, Any]) -> dict[str, Any] | None:
         "tipo_ativo": tipo_ativo,
         "categoria": categoria,
         "indice": indice,
+        "data_emissao": data_emissao,
+        "data_vencimento": data_vencimento,
+        "pagamento": pagamento,
+        "status_pu": status_pu,
+        "classificacao": classificacao,
+        "cod_cetip": cod_cetip,
+        "cod_bovespa": cod_bovespa,
         "data_pu_atual": data_pu_atual,
         "pu_atual": str(pu_atual) if pu_atual is not None else None,
         "valor_nominal_atual": str(valor_nominal_atual) if valor_nominal_atual is not None else None,
         "juros_atual": str(juros_atual) if juros_atual is not None else None,
         "raw_json": ensure_json_string(item),
+        "raw_details_json": ensure_json_string(detail_item) if detail_item else None,
     }
 
 
@@ -251,7 +378,23 @@ class FiduciarioService:
         asset_ids: list[int] = []
 
         for item in items:
-            row = build_ativo_row(item)
+            emissao = first_existing(
+                item,
+                "CODCETIP",
+                "CODBOVESPA",
+                "NOME",
+                "nome",
+            )
+
+            detail_item: dict[str, Any] = {}
+            if emissao:
+                try:
+                    detail_raw = self.client.get_asset_details(str(emissao))
+                    detail_item = build_detail_lookup(detail_raw)
+                except Exception as e:
+                    print(f"[WARN] falha ao buscar detalhe do ativo emissao={emissao}: {e}")
+
+            row = build_ativo_row(item, detail_item=detail_item)
             if row is None:
                 continue
 
