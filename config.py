@@ -7,7 +7,7 @@ DB_PATH = DATA_DIR / "fiduciario.db"
 
 BASE_URL = "https://fiduciario.com.br/wp-admin/admin-ajax.php"
 
-TIMEOUT = 30
+TIMEOUT = 90
 
 DEFAULT_HEADERS = {
     "User-Agent": (

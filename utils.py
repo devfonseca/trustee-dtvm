@@ -90,6 +90,16 @@ def parse_date(value: Any) -> str | None:
     if not raw:
         return None
 
+    # NOVO BLOCO: Se a data vier com 'T' (ex: 2024-10-03T00:00:00-03:00), 
+    # corta no 'T' e valida só a data YYYY-MM-DD
+    if "T" in raw:
+        data_part = raw.split("T")[0]
+        try:
+            from datetime import datetime
+            return datetime.strptime(data_part, "%Y-%m-%d").date().isoformat()
+        except ValueError:
+            pass
+
     formats = [
         "%Y-%m-%d",
         "%Y/%m/%d",
@@ -105,6 +115,7 @@ def parse_date(value: Any) -> str | None:
 
     for fmt in formats:
         try:
+            from datetime import datetime
             return datetime.strptime(raw, fmt).date().isoformat()
         except ValueError:
             continue

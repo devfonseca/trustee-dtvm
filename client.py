@@ -20,29 +20,44 @@ class FiduciarioClient:
         path.write_text(response.text, encoding="utf-8")
 
     def _get(self, params: dict[str, Any], debug_name: str | None = None) -> Any:
-        response = self.session.get(BASE_URL, params=params, timeout=TIMEOUT)
-        response.raise_for_status()
+        import time
+        from requests.exceptions import RequestException
 
-        if debug_name:
-            self._save_debug_response(debug_name, response)
+        max_tentativas = 3
+        
+        for tentativa in range(max_tentativas):
+            try:
+                response = self.session.get(BASE_URL, params=params, timeout=TIMEOUT)
+                response.raise_for_status()
 
-        text = response.text.strip()
+                if debug_name:
+                    self._save_debug_response(debug_name, response)
 
-        # 1) tenta parsear como JSON normalmente
-        try:
-            return response.json()
-        except Exception:
-            pass
+                text = response.text.strip()
 
-        # 2) tenta parsear a string manualmente
-        try:
-            import json
-            return json.loads(text)
-        except Exception:
-            pass
+                # 1) tenta parsear como JSON normalmente
+                try:
+                    return response.json()
+                except Exception:
+                    pass
 
-        # 3) devolve texto puro
-        return text
+                # 2) tenta parsear a string manualmente
+                try:
+                    import json
+                    return json.loads(text)
+                except Exception:
+                    pass
+
+                # 3) devolve texto puro
+                return text
+
+            except RequestException as e:
+                print(f"[AVISO] Falha de conexão/timeout. Tentativa {tentativa + 1}/{max_tentativas}. Aguardando 5s...")
+                time.sleep(5)  # Espera 5 segundos para o servidor respirar
+                
+                if tentativa == max_tentativas - 1:
+                    print(f"[ERRO] O servidor não respondeu. Pulando requisição.")
+                    return [] # Retorna uma lista vazia para o scraper não quebrar e ir para o próximo ativo
 
     def get_asset_details(self, emissao: str) -> Any:
         params = {

@@ -100,183 +100,83 @@ def build_ativo_row(
 ) -> dict[str, Any] | None:
     detail_item = detail_item or {}
 
-    site_id = first_existing(
-        item,
-        "ID_TITULO",
-        "idTitulo",
-        "titulo_id",
-        "IdTitulo",
-        "ID",
-        "Id",
-        "id",
-    )
-    if site_id is None:
-        site_id = first_existing(
-            detail_item,
-            "ID_TITULO",
-            "idTitulo",
-            "titulo_id",
-            "IdTitulo",
-            "ID",
-            "Id",
-            "id",
-        )
+    # O ID principal vem como 'id_titulo' no detalhe
+    site_id = first_existing(detail_item, "id_titulo") or first_existing(item, "ID_TITULO", "id")
     if site_id is None:
         return None
 
-    nome = first_existing(
-        detail_item,
-        "NOME",
-        "Nome",
-        "nome",
-        "titulo",
-        "Titulo",
-        "ativo",
-        "NomeTitulo",
-    ) or first_existing(
-        item,
-        "NOME",
-        "Nome",
-        "nome",
-        "titulo",
-        "Titulo",
-        "ativo",
-        "NomeTitulo",
-    )
+    nome = first_existing(detail_item, "nome_emissao", "nome_fantasia_emissao") or first_existing(item, "NOME", "nome")
+    
+    cod_cetip = first_existing(detail_item, "codcetip_emissao") or first_existing(item, "CODCETIP")
+    cod_bovespa = first_existing(detail_item, "codbovespa_emissao") or first_existing(item, "CODBOVESPA")
+    
+    # Se não tiver B3, usa CETIP
+    codigo = cod_bovespa or cod_cetip
 
-    cod_cetip = first_existing(detail_item, "CODCETIP", "codcetip", "CodCetip") or first_existing(
-        item, "CODCETIP", "codcetip", "CodCetip"
-    )
-    cod_bovespa = first_existing(detail_item, "CODBOVESPA", "codbovespa", "CodBovespa") or first_existing(
-        item, "CODBOVESPA", "codbovespa", "CodBovespa"
-    )
+    emissor = first_existing(detail_item, "razao_social_emissao") or first_existing(item, "EMISSOR")
+    tipo_ativo = first_existing(detail_item, "classificacao_emissao") or first_existing(item, "TIPO_ATIVO")
+    
+    # === NOVOS CAMPOS MAPEADOS DIRETAMENTE DO AJAX ===
+    cnpj_emissor = first_existing(detail_item, "cnpj_emissao")
+    numero_emissao = first_existing(detail_item, "numero_emissao_emissao")
+    numero_serie = first_existing(detail_item, "numero_serie_emissao")
+    codigo_isin = first_existing(detail_item, "isin_emissao")
+    remuneracao = first_existing(detail_item, "remuneracao_emissao") # Ex: Prefixado 13,3181% a.a. ou CDI + 5%
+    garantia = first_existing(detail_item, "garantia_emissao")
+    rating = first_existing(detail_item, "rating_emissao") # Pode vir vazio
+    quantidade = first_existing(detail_item, "quantidade_emissao")
+    forma = first_existing(detail_item, "forma_emissao")
+    resgate_antecipado = first_existing(detail_item, "resgate_antecipado_emissao")
+    registro_cvm = first_existing(detail_item, "instrucao_cvm_emissao")
+    volume_serie = first_existing(detail_item, "volume_emissao")
+    coordenador_lider = first_existing(detail_item, "coordenador_lider_emissao")
+    banco_liquidante = first_existing(detail_item, "escriturador_mandarario_emissao", "banco_liquidante_emissao")
+    
+    indice = first_existing(detail_item, "indexador_emissao") or first_existing(item, "INDEXADOR", "INDICE")
 
-    codigo = cod_cetip or cod_bovespa or first_existing(
-        detail_item, "codigo", "Codigo", "sigla", "ticker"
-    ) or first_existing(
-        item, "codigo", "Codigo", "sigla", "ticker"
-    )
+    # Datas (O payload retorna '2024-10-03T00:00:00-03:00')
+    data_emissao = parse_date(first_existing(detail_item, "data_emissao_emissao", "DATA_EMISSAO"))
+    data_vencimento = parse_date(first_existing(detail_item, "data_vencimento_emissao", "DATA_VENCIMENTO"))
+    
+    pagamento = first_existing(detail_item, "pagamento_emissao") or first_existing(item, "PAGAMENTO")
+    status_pu = first_existing(detail_item, "status_emissao", "situacao_emissao") or first_existing(item, "STATUS_PU")
+    categoria = first_existing(item, "CATEGORIA")
 
-    emissor = first_existing(
-        detail_item, "EMISSOR", "Emissor", "emissor"
-    ) or first_existing(
-        item, "EMISSOR", "Emissor", "emissor"
-    )
-
-    tipo_ativo = first_existing(
-        detail_item, "TIPO_ATIVO", "TIPO", "tipo", "tipoAtivo", "TipoAtivo"
-    ) or first_existing(
-        item, "TIPO_ATIVO", "TIPO", "tipo", "tipoAtivo", "TipoAtivo"
-    )
-
-    categoria = first_existing(
-        detail_item, "CATEGORIA", "categoria", "Categoria", "CLASSIFICACAO"
-    ) or first_existing(
-        item, "CATEGORIA", "categoria", "Categoria", "CLASSIFICACAO"
-    )
-
-    classificacao = first_existing(
-        detail_item, "CLASSIFICACAO", "classificacao", "Classificacao"
-    ) or first_existing(
-        item, "CLASSIFICACAO", "classificacao", "Classificacao"
-    )
-
-    indice = first_existing(
-        detail_item, "INDEXADOR", "INDICE", "indice", "Indice"
-    ) or first_existing(
-        item, "INDEXADOR", "INDICE", "indice", "Indice"
-    )
-
-    data_emissao = parse_date(
-        first_existing(
-            detail_item,
-            "DATA_EMISSAO",
-            "EMISSAO",
-            "data_emissao",
-            "dataEmissao",
-            "DataEmissao",
-        )
-    )
-
-    data_vencimento = parse_date(
-        first_existing(
-            detail_item,
-            "DATA_VENCIMENTO",
-            "VENCIMENTO",
-            "data_vencimento",
-            "dataVencimento",
-            "DataVencimento",
-        )
-    )
-
-    pagamento = first_existing(
-        detail_item,
-        "PAGAMENTO",
-        "pagamento",
-        "Pagamento",
-    ) or first_existing(
-        item,
-        "PAGAMENTO",
-        "pagamento",
-        "Pagamento",
-    )
-
-    status_pu = first_existing(
-        detail_item,
-        "STATUS_PU",
-        "status_pu",
-        "StatusPU",
-    ) or first_existing(
-        item,
-        "STATUS_PU",
-        "status_pu",
-        "StatusPU",
-    )
-
-    data_pu_atual = parse_date(
-        first_existing(item, "DATA", "data", "Data", "dataBase", "dataReferencia")
-    )
-
-    pu_atual = parse_decimal(
-        first_existing(item, "PUPAR", "PU", "pu", "preco", "Preço", "Preco")
-    )
-
-    valor_nominal_atual = parse_decimal(
-        first_existing(
-            item,
-            "VALOR_NOMINAL_ATUALIZADO",
-            "VALOR_NOMINAL",
-            "valorNominal",
-            "valor_nominal",
-            "ValorNominal",
-        )
-    )
-
-    juros_atual = parse_decimal(
-        first_existing(
-            item,
-            "JUROS_INDICE",
-            "VALOR_JUROS_DI",
-            "juros",
-            "Juros",
-        )
-    )
+    # Dados do PU atual
+    data_pu_atual = parse_date(first_existing(item, "DATA", "dataBase", "dataReferencia"))
+    pu_atual = parse_decimal(first_existing(item, "PUPAR", "PU"))
+    valor_nominal_atual = parse_decimal(first_existing(item, "VALOR_NOMINAL_ATUALIZADO", "VALOR_NOMINAL"))
+    juros_atual = parse_decimal(first_existing(item, "JUROS_INDICE", "VALOR_JUROS_DI"))
 
     return {
         "site_id": int(site_id),
         "nome": nome,
         "codigo": codigo,
         "emissor": emissor,
+        "cnpj_emissor": cnpj_emissor,
+        "numero_emissao": numero_emissao,
+        "numero_serie": numero_serie,
+        "codigo_isin": codigo_isin,
         "tipo_ativo": tipo_ativo,
         "categoria": categoria,
         "indice": indice,
+        "remuneracao": remuneracao,
         "data_emissao": data_emissao,
         "data_vencimento": data_vencimento,
         "pagamento": pagamento,
         "status_pu": status_pu,
-        "classificacao": classificacao,
+        "classificacao": tipo_ativo, # Geralmente é a mesma coisa
         "cod_cetip": cod_cetip,
         "cod_bovespa": cod_bovespa,
+        "quantidade": quantidade,
+        "volume_serie": volume_serie,
+        "garantia": garantia,
+        "forma": forma,                               # NOVO AQUI
+        "resgate_antecipado": resgate_antecipado,     # NOVO AQUI
+        "registro_cvm": registro_cvm,                 # NOVO AQUI
+        "rating": rating,
+        "coordenador_lider": coordenador_lider,
+        "banco_liquidante": banco_liquidante,
         "data_pu_atual": data_pu_atual,
         "pu_atual": str(pu_atual) if pu_atual is not None else None,
         "valor_nominal_atual": str(valor_nominal_atual) if valor_nominal_atual is not None else None,

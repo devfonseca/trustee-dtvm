@@ -24,9 +24,14 @@ def init_db(conn: sqlite3.Connection) -> None:
             nome TEXT,
             codigo TEXT,
             emissor TEXT,
+            cnpj_emissor TEXT,          -- NOVO
+            numero_emissao TEXT,        -- NOVO (ex: 2ª Emissão)
+            numero_serie TEXT,          -- NOVO (ex: 1ª Série)
+            codigo_isin TEXT,           -- NOVO (ex: BRDELGDBS023)
             tipo_ativo TEXT,
             categoria TEXT,
-            indice TEXT,
+            indice TEXT,                -- Indexador (ex: CDI)
+            remuneracao TEXT,           -- NOVO (ex: CDI + 5,00% a.a.)
             data_emissao TEXT,
             data_vencimento TEXT,
             pagamento TEXT,
@@ -34,6 +39,15 @@ def init_db(conn: sqlite3.Connection) -> None:
             classificacao TEXT,
             cod_cetip TEXT,
             cod_bovespa TEXT,
+            quantidade TEXT,            -- NOVO
+            forma TEXT,                 -- NOVO
+            resgate_antecipado TEXT,    -- NOVO
+            registro_cvm TEXT,          -- NOVO 
+            volume_serie TEXT,          -- NOVO
+            garantia TEXT,              -- NOVO
+            rating TEXT,                -- NOVO
+            banco_liquidante TEXT,      -- NOVO
+            coordenador_lider TEXT,     -- NOVO
             pu_atual NUMERIC,
             data_pu_atual TEXT,
             valor_nominal_atual NUMERIC,
